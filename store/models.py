@@ -3,7 +3,7 @@ from enum import Enum
 
 
 class Store(models.Model):
-    storeId = models.BigAutoField(primary_key=True)
+    store_id = models.BigAutoField(primary_key=True)
     store_name = models.CharField(max_length=50)
     phone_num = models.CharField(max_length=15, unique=True)
     address = models.CharField(max_length=50, unique=True)
