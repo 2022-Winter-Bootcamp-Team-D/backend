@@ -3,11 +3,10 @@ from store.models import Store
 
 
 class Waiting(models.Model):
-    Status = [
-        ('CN', 'CANCELED'),
-        ('WA', 'WAITING'),
-        ('EN', 'ENTERED'),
-        ]
+    class Status(models.TextChoices):
+        WAITING = 'WA'
+        CANCELED = 'CN'
+        ENTERED = 'EN'
 
     waiting_id = models.BigAutoField(primary_key=True)
     store_id = models.ForeignKey(Store, on_delete=models.CASCADE)
@@ -15,9 +14,9 @@ class Waiting(models.Model):
     phone_num = models.CharField(max_length=20)
     people = models.SmallIntegerField()
     password = models.SmallIntegerField()
-    status = models.BooleanField(default='WA', choices=Status)
-    create_at = models.DateTimeField(auto_now=True)
-    update_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=2, default='WA', choices=Status.choices)
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'waiting'
