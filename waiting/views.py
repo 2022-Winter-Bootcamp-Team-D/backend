@@ -34,3 +34,29 @@ def waiting(request):
         except Exception:
             return HttpResponse(status=400)
 
+    if request.method == 'GET':
+        request_body = json.loads(request.body)
+        db_data = Waiting.objects.get(phone_num=request_body["phone_num"],
+                                      password=request_body["password"],
+                                      status="WA")
+
+        waiting_id = db_data.waiting_id
+        store_id = db_data.store_id_id
+        people = db_data.people
+        create_at = db_data.create_at
+
+        waiting_teams = Waiting.objects.filter(store_id=store_id, status="WA")
+        waiting_order = 1
+        for i in waiting_teams:
+            other_waiting_id = i.waiting_id
+            if other_waiting_id < waiting_id:
+                waiting_order += 1
+
+        waiting_list = [
+            f"waiting_id : {waiting_id}\n",
+            f"waiting_order : {waiting_order}\n",
+            f"people : {people}\n",
+            f"create_at : {create_at}\n"
+        ]
+
+        return HttpResponse(waiting_list, status=200)
