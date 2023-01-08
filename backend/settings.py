@@ -85,7 +85,7 @@ HOST = os.environ.get('HOST')
 PORT = os.environ.get('PORT')
 NAME = os.environ.get('NAME')
 USER = os.environ.get('USER')
-print(USER)
+
 PASSWORD = os.environ.get('PASSWORD')
 DATABASES = {
     'default': {
