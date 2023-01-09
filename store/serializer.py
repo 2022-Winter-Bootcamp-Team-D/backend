@@ -12,3 +12,9 @@ class StoreBreaktimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Store
         fields = ('is_waiting',)
+
+
+class StoreDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Store
+        fields = ('information',)

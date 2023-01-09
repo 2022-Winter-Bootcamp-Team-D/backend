@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from store.models import Store
 from .serializer import StoreJoinSerializer
 from .serializer import StoreBreaktimeSerializer
+from .serializer import StoreDetailSerializer
 
 
 @api_view(['POST'])
@@ -30,6 +31,21 @@ def breaktime(request):
     try:
         object = Store.objects.get(store_id=store_id)
         object.is_waiting = not object.is_waiting
+        object = object.save()
+
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+def detail(request):
+    store_id = request.data['store_id']
+    information = request.data['information']
+
+    try:
+        object = Store.objects.get(store_id=store_id)
+        object.information = information
         object = object.save()
 
     except:
