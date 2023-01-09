@@ -9,7 +9,7 @@ class Waiting(models.Model):
         ENTERED = 'EN'
 
     waiting_id = models.BigAutoField(primary_key=True)
-    store_id = models.ForeignKey(Store, on_delete=models.CASCADE)
+    store_id = models.ForeignKey(Store, on_delete=models.CASCADE, db_column='store_id')
     name = models.CharField(max_length=10)
     phone_num = models.CharField(max_length=20)
     people = models.SmallIntegerField()
