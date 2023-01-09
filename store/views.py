@@ -13,11 +13,10 @@ def signin(request):
     latitude = request.data['latitude']
     longitude = request.data['longitude']
     password = request.data['password']
-    information = request.data['information']
 
     try:
         object = Store.objects.create(store_name=store_name, phone_num=phone_num, latitude=latitude, longitude=longitude,
-                                      password=password, information=information)
+                                      password=password)
         response = StoreJoinSerializer(object)
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
