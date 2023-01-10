@@ -9,11 +9,11 @@ class Waiting(models.Model):
         ENTERED = 'EN'
 
     waiting_id = models.BigAutoField(primary_key=True)
-    store_id = models.ForeignKey(Store, on_delete=models.CASCADE)
+    store_id = models.ForeignKey(Store, on_delete=models.CASCADE, db_column='store_id')
     name = models.CharField(max_length=10)
     phone_num = models.CharField(max_length=20)
     people = models.SmallIntegerField()
-    password = models.SmallIntegerField()
+    password = models.CharField(max_length=4)
     status = models.CharField(max_length=2, default='WA', choices=Status.choices)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
