@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from store.models import Store
+from waiting.models import Waiting
 from .serializer import StoreJoinSerializer
 from .serializer import StoreBreaktimeSerializer
 from .serializer import StoreDetailSerializer
@@ -51,3 +52,11 @@ def detail(request):
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+def cancellations(request):
+    waiting_id = request.data['waiting_id']
+    store_id = request.data['store_id']
+
+    Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
+    return Response("웨이팅이 성공적으로 취소 됐습니다.", status=200)
