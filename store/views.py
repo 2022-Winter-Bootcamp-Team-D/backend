@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from store.models import Store
 from .serializer import StoreJoinSerializer
+from .notification import notify
 
 
 @api_view(['POST'])
@@ -20,4 +21,16 @@ def signin(request):
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     return Response(data=response.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+def enter_notify(request):
+    # result = notify.enter_notify(request)
+    notify.enter_notify(token=request.data['token'])
+
+    return Response('호출에 성공했습니다!', status=status.HTTP_200_OK)
+
+
+
+
 
