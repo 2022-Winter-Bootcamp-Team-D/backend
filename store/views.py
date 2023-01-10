@@ -6,6 +6,7 @@ from waiting.models import Waiting
 from .serializer import StoreJoinSerializer
 from .serializer import StoreBreaktimeSerializer
 from .serializer import StoreDetailSerializer
+from .serializer import StoreWaitingsSerializer
 
 
 @api_view(['POST'])
@@ -53,6 +54,21 @@ def detail(request):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_200_OK)
 
+
+@api_view(['GET'])
+def waitings(request):
+    store_id = request.data['store_id']
+
+    try:
+        object = Store.objects.get(store_id=store_id)
+        object = Waiting.objects.filter(store_id=object, status='WA')
+
+        response = StoreWaitingsSerializer(object)
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_200_OK)
+
+
 @api_view(['PATCH'])
 def cancellations(request):
     waiting_id = request.data['waiting_id']
@@ -60,3 +76,4 @@ def cancellations(request):
 
     Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
     return Response("웨이팅이 성공적으로 취소 됐습니다.", status=200)
+
