@@ -52,3 +52,10 @@ def waiting(request):
         serializer = WaitingSerializer(db_data)
 
         return Response(serializer.data, status=200)
+
+    if request.method == 'PATCH':
+        waiting_id = request.data['waiting_id']
+        print(waiting_id)
+        Waiting.objects.filter(waiting_id=waiting_id).update(status='CN')
+
+        return Response("성공적으로 취소 됐습니다.", status=200)
