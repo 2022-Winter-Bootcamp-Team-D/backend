@@ -1,3 +1,5 @@
+from django.core import serializers
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -85,7 +87,12 @@ def cancellations(request):
     waiting_id = request.data['waiting_id']
     store_id = request.data['store_id']
     token = User.objects.get(waiting_id=waiting_id).token
+    data = Store.objects.get(store_id=store_id)
+    information = data.information
+    is_waiting = data.is_waiting
 
+    result = Waiting.objects.filter(store_id=store_id, status='WA')
+    serializer = serializers.serialize("json", result)
     Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
     notify.cancel_notify(token)
-    return Response("웨이팅이 성공적으로 취소 됐습니다.", status=200)
+    return HttpResponse(serializer, content_type="text/json-comment-filtered")
