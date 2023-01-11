@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from store.models import Store
 from waiting.models import Waiting
 from .serializer import StoreJoinSerializer
+from .notification import notify
 from .serializer import StoreBreaktimeSerializer
 from .serializer import StoreDetailSerializer
 from .serializer import StoreWaitingsSerializer
@@ -24,6 +25,15 @@ def signin(request):
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     return Response(data=response.data, status=status.HTTP_201_CREATED)
+
+
+
+@api_view(['POST'])
+def enter_notify(request):
+    # result = notify.enter_notify(request)
+    notify.enter_notify(token=request.data['token'])
+
+    return Response('호출에 성공했습니다!', status=status.HTTP_200_OK)
 
 
 @api_view(['PATCH'])
@@ -76,4 +86,3 @@ def cancellations(request):
 
     Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
     return Response("웨이팅이 성공적으로 취소 됐습니다.", status=200)
-
