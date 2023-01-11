@@ -8,4 +8,5 @@ urlpatterns = [
     path('detail/', views.detail),
     path('waitings/', views.waitings),
     path('cancellations/', views.cancellations),
+    path('notifications/', views.enter_notify),
 ]
