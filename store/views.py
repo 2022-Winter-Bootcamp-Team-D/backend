@@ -7,7 +7,6 @@ from rest_framework.views import APIView
 from store.models import Store
 from user.models import User
 from waiting.models import Waiting
-from user.models import User
 from django.core import serializers
 from .serializer import StoreJoinSerializer
 from .notification import notify
@@ -71,6 +70,7 @@ def detail(request):
 
 
 class waitings(APIView):
+
     def get(self, request):
         store_id = request.data['store_id']
         WA = 'WA'
@@ -80,8 +80,10 @@ class waitings(APIView):
                 """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
             waiting = serializers.serialize(
                 "json", waitings, fields=("phone_num", "people", "name"))
+
             data = {}
             data["data"] = []
+
             for i in waitings:
                 temp = {
                     "waiting_id": i.pk,
@@ -92,6 +94,7 @@ class waitings(APIView):
                 data["data"].append(temp)
             data["information"] = store.information
             data["is_waiting"] = store.is_waiting
+
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
@@ -104,12 +107,15 @@ class waitings(APIView):
             waiting = Waiting.objects.get(waiting_id=waiting_id)
             waiting.status = 'EN'
             waiting.save()
+            waitings = Waiting.objects.raw(
+                """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s LIMIT 2""" % (store_id, "'WA'"))
+            second_customer = User.objects.get(waiting_id=waitings[1]).token
 
-            # response = StoreWaitingsSerializer(object)
-            # enter_notify(request)
+            notify.auto_notify(second_customer)
+
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_200_OK)
+        return Response('대기 1순위 손님에게 알림을 보냈다능', status=status.HTTP_200_OK)
 
 
 @api_view(['PATCH'])
@@ -119,7 +125,8 @@ def cancellations(request):
     token = User.objects.get(waiting_id=waiting_id).token
     store = Store.objects.get(store_id=store_id)
 
-    Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
+    Waiting.objects.filter(waiting_id=waiting_id,
+                           store_id=store_id).update(status='CN')
     notify.cancel_notify(token)
 
     waitings = Waiting.objects.raw(
