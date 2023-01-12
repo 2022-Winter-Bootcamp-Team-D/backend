@@ -33,7 +33,7 @@ class notify:
         # Response is a message ID string.
         return response
 
-    def auto_notify(self, token):
+    def auto_notify(token):
         """
         매장에 대기 팀이 입장했을 경우 대기 1순위 팀에게 알림
         result = notify.enter_notify(token)
@@ -54,7 +54,7 @@ class notify:
         response = messaging.send(message)
         return response
 
-    def cancel_notify(self, token):
+    def cancel_notify(token):
         """
         팀이 취소하거나 취소 당할 경우
         result = notify.cancel_notify(token)

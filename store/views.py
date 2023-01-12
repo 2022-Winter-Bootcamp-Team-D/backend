@@ -1,12 +1,12 @@
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from store.models import Store
+from user.models import User
 from waiting.models import Waiting
 from .serializer import StoreJoinSerializer
 from .notification import notify
-from .serializer import StoreBreaktimeSerializer
-from .serializer import StoreDetailSerializer
 from .serializer import StoreWaitingsSerializer
 
 
@@ -19,13 +19,13 @@ def signin(request):
     password = request.data['password']
 
     try:
-        object = Store.objects.create(store_name=store_name, phone_num=phone_num, latitude=latitude, longitude=longitude,
+        object = Store.objects.create(store_name=store_name, phone_num=phone_num, latitude=latitude,
+                                      longitude=longitude,
                                       password=password)
         response = StoreJoinSerializer(object)
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     return Response(data=response.data, status=status.HTTP_201_CREATED)
-
 
 
 @api_view(['POST'])
@@ -83,6 +83,27 @@ def waitings(request):
 def cancellations(request):
     waiting_id = request.data['waiting_id']
     store_id = request.data['store_id']
+    token = User.objects.get(waiting_id=waiting_id).token
+    store = Store.objects.get(store_id=store_id)
 
     Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
-    return Response("웨이팅이 성공적으로 취소 됐습니다.", status=200)
+    notify.cancel_notify(token)
+
+    waitings = Waiting.objects.raw(
+        """SELECT waiting_id, name, people, phone_num 
+        FROM Waiting 
+        WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
+    data = {}
+    data["data"] = []
+    for i in waitings:
+        temp = {
+            "waiting_id": i.pk,
+            "name": i.name,
+            "phone_num": i.phone_num,
+            "people": i.people
+        }
+        data["data"].append(temp)
+    data["information"] = store.information
+    data["is_waiting"] = store.is_waiting
+
+    return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
