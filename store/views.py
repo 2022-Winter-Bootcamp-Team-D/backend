@@ -120,7 +120,6 @@ class waitings(APIView):
 
 def search_waiting_order(waiting_id, store_id):
     waiting_teams = Waiting.objects.filter(waiting_id__lt=waiting_id, store_id=store_id, status="WA")
-    print(waiting_teams)
     waiting_order = len(waiting_teams) + 1
     return waiting_order
 
