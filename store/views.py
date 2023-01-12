@@ -128,6 +128,7 @@ def cancellations(request):
     waiting_id = request.data['waiting_id']
     store_id = request.data['store_id']
     waiting_order = search_waiting_order(waiting_id, store_id)
+    data = {}
     try:
         cancel_token = User.objects.get(waiting_id=waiting_id).token
         store = Store.objects.get(store_id=store_id)
@@ -136,24 +137,20 @@ def cancellations(request):
         Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
         notify.cancel_notify(cancel_token)
 
-        # 요청 받은 가게의 웨이팅 리스트 반환
-        waitings = Waiting.objects.raw(
-            """SELECT waiting_id
-            FROM Waiting 
-            WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
-
-        # 다음 웨이팅 팀이 존재하는지 확인
-        waiting_exist = True
+        # 다음 웨이팅 팀이 존재하는지 확인 없으면 바로 리턴
         try:
+            waitings = Waiting.objects.raw(
+                """SELECT waiting_id
+                FROM Waiting 
+                WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
             auto_token = User.objects.get(waiting_id=waitings[0]).token
-        except User.DoesNotExist:
-            waiting_exist = False
+        except :
+            return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
 
         # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
-        if waiting_order == 1 and waiting_exist:
+        if waiting_order == 1:
             notify.auto_notify(auto_token)
 
-        data = {}
         data["data"] = []
         for i in waitings:
             temp = {
