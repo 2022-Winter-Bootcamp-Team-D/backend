@@ -122,27 +122,45 @@ class waitings(APIView):
 def cancellations(request):
     waiting_id = request.data['waiting_id']
     store_id = request.data['store_id']
-    token = User.objects.get(waiting_id=waiting_id).token
-    store = Store.objects.get(store_id=store_id)
 
-    Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
-    notify.cancel_notify(token)
+    try:
+        cancel_token = User.objects.get(waiting_id=waiting_id).token
+        store = Store.objects.get(store_id=store_id)
 
-    waitings = Waiting.objects.raw(
-        """SELECT waiting_id, name, people, phone_num 
-        FROM Waiting 
-        WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
-    data = {}
-    data["data"] = []
-    for i in waitings:
-        temp = {
-            "waiting_id": i.pk,
-            "name": i.name,
-            "phone_num": i.phone_num,
-            "people": i.people
-        }
-        data["data"].append(temp)
-    data["information"] = store.information
-    data["is_waiting"] = store.is_waiting
+        # status를 CN(CANCEL)로 바꿔주고 취소 알림 보내기
+        Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
+        notify.cancel_notify(cancel_token)
+
+        # 요청 받은 가게의 웨이팅 리스트 반환
+        waitings = Waiting.objects.raw(
+            """SELECT waiting_id
+            FROM Waiting 
+            WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
+
+        # 다음 웨이팅 팀이 존재하는지 확인
+        waiting_exist = True
+        try:
+            auto_token = User.objects.get(waiting_id=waitings[0]).token
+        except User.DoesNotExist:
+            waiting_exist = False
+
+        # 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
+        if waiting_exist:
+            notify.auto_notify(auto_token)
+
+        data = {}
+        data["data"] = []
+        for i in waitings:
+            temp = {
+                "waiting_id": i.pk,
+                "name": i.name,
+                "phone_num": i.phone_num,
+                "people": i.people
+            }
+            data["data"].append(temp)
+        data["information"] = store.information
+        data["is_waiting"] = store.is_waiting
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
