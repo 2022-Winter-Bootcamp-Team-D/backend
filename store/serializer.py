@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from store.models import Store
 from waiting.models import Waiting
+from user.models import User
 
 
 class StoreJoinSerializer(serializers.ModelSerializer):
@@ -18,15 +19,26 @@ class StoreBreaktimeSerializer(serializers.ModelSerializer):
 class StoreDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Store
-        fields = ('information',)
+        fields = ('information', )
 
 
 class StoreWaitingsSerializer(serializers.ModelSerializer):
+    information = serializers.SerializerMethodField()
+    is_waiting = serializers.SerializerMethodField()
+
+    def get_information(self, obj):
+        return obj.information
+
+    def get_is_waiting(self, obj):
+        return obj.is_waiting
 
     class Meta:
         model = Waiting
         fields = [
+            'information',
+            'is_waiting',
+            'waiting_id',
             'name',
-            'phone_num',
-            'people'
+            'people',
+            'phone_num'
         ]

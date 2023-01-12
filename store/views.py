@@ -1,13 +1,18 @@
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
+from django.http import HttpResponse
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from store.models import Store
 from user.models import User
 from waiting.models import Waiting
+from user.models import User
+from django.core import serializers
 from .serializer import StoreJoinSerializer
 from .notification import notify
 from .serializer import StoreWaitingsSerializer
+import json
 
 
 @api_view(['POST'])
@@ -65,18 +70,52 @@ def detail(request):
     return Response(status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
-def waitings(request):
-    store_id = request.data['store_id']
+class waitings(APIView):
+    def get(self, request):
+        store_id = request.data['store_id']
+        WA = 'WA'
+        # try:
+        store = Store.objects.get(store_id=store_id)
+        waitings = Waiting.objects.raw(
+            """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
+        waiting = serializers.serialize(
+            "json", waitings, fields=("phone_num", "people", "name"))
+        data = {}
+        data["data"] = []
+        for i in waitings:
+            temp = {
+                "waiting_id": i.pk,
+                "name": i.name,
+                "phone_num": i.phone_num,
+                "people": i.people
+            }
+            data["data"].append(temp)
+        data["information"] = store.information
+        data["is_waiting"] = store.is_waiting
+        # print(waiting[0])
+        # print(waitings)
+        # if waitings == null:
+        # waitings.information = store.information
+        # waitings.is_waiting = store.is_waiting
+        # response = StoreWaitingsSerializer(waitings)
+        # except:
+        #     return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
 
-    try:
-        object = Store.objects.get(store_id=store_id)
-        object = Waiting.objects.filter(store_id=object, status='WA')
+    def patch(self, request):
+        store_id = request.data['store_id']
+        waiting_id = request.data['waiting_id']
 
-        response = StoreWaitingsSerializer(object)
-    except:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    return Response(status=status.HTTP_200_OK)
+        try:
+            waiting = Waiting.objects.get(waiting_id=waiting_id)
+            waiting.status = 'EN'
+            waiting.save()
+
+            # response = StoreWaitingsSerializer(object)
+            # enter_notify(request)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_200_OK)
 
 
 @api_view(['PATCH'])
