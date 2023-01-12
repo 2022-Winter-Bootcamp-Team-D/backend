@@ -9,4 +9,5 @@ urlpatterns = [
     path('waitings/', views.waitings),
     path('cancellations/', views.cancellations),
     path('notifications/', views.enter_notify),
+    path('search/', views.search),
 ]
