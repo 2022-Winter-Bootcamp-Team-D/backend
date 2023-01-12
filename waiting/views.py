@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from store.models import Store
+from user.models import User
 from waiting.models import Waiting
 from waiting.serializer import WaitingSerializer
 
@@ -20,6 +21,7 @@ def waiting(request):
         name = request.data["name"]
         people = request.data["people"]
         password = request.data["password"]
+        token = request.data['token']
         status = "WA"
 
         waiting_check = Waiting.objects.filter(phone_num=phone_num, status="WA").exists()
@@ -28,7 +30,7 @@ def waiting(request):
 
         result = Waiting.objects.create(store_id=store_id, name=name, phone_num=phone_num,
                                         people=people, password=password, status=status)
-
+        User.objects.create(waiting_id=result, token=token)
         waiting_id = result.waiting_id
         waiting_order = search_waiting_order(waiting_id, store_id)
 
@@ -55,7 +57,6 @@ def waiting(request):
 
     if request.method == 'PATCH':
         waiting_id = request.data['waiting_id']
-        print(waiting_id)
         Waiting.objects.filter(waiting_id=waiting_id).update(status='CN')
 
         return Response("성공적으로 취소 됐습니다.", status=200)
