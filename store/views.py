@@ -118,11 +118,17 @@ class waitings(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
+def search_waiting_order(waiting_id, store_id):
+    waiting_teams = Waiting.objects.filter(waiting_id__lt=waiting_id, store_id=store_id, status="WA")
+    print(waiting_teams)
+    waiting_order = len(waiting_teams) + 1
+    return waiting_order
+
 @api_view(['PATCH'])
 def cancellations(request):
     waiting_id = request.data['waiting_id']
     store_id = request.data['store_id']
-
+    waiting_order = search_waiting_order(waiting_id, store_id)
     try:
         cancel_token = User.objects.get(waiting_id=waiting_id).token
         store = Store.objects.get(store_id=store_id)
@@ -144,8 +150,8 @@ def cancellations(request):
         except User.DoesNotExist:
             waiting_exist = False
 
-        # 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
-        if waiting_exist:
+        # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
+        if waiting_order == 1 and waiting_exist:
             notify.auto_notify(auto_token)
 
         data = {}
