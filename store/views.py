@@ -5,7 +5,6 @@ from rest_framework.views import APIView
 from store.models import Store
 from waiting.models import Waiting
 from user.models import User
-from django.core import serializers
 from .serializer import StoreJoinSerializer
 from .notification import notify
 
@@ -93,59 +92,35 @@ def search_waitings(store_id):
     return data
 
 
+def search_waiting_order(waiting_id, store_id):
+    waiting_teams = Waiting.objects.filter(waiting_id__lt=waiting_id, store_id=store_id, status="WA")
+    waiting_order = len(waiting_teams) + 1
+    return waiting_order
+
+
 class waitings(APIView):
 
     def get(self, request):
         store_id = request.data['store_id']
-        WA = 'WA'
-        try:
-            store = Store.objects.get(store_id=store_id)
-            waitings = Waiting.objects.raw(
-                """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
-            waiting = serializers.serialize(
-                "json", waitings, fields=("phone_num", "people", "name"))
-
-            data = {}
-            data["data"] = []
-
-            for i in waitings:
-                temp = {
-                    "waiting_id": i.pk,
-                    "name": i.name,
-                    "phone_num": i.phone_num,
-                    "people": i.people
-                }
-                data["data"].append(temp)
-            data["information"] = store.information
-            data["is_waiting"] = store.is_waiting
-
-        except:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        data = search_waitings(store_id)
         return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
 
     def patch(self, request):
+        store_id = request.data['store_id']
         waiting_id = request.data['waiting_id']
-
+        waiting_order = search_waiting_order(waiting_id, store_id)
         try:
             waiting = Waiting.objects.get(waiting_id=waiting_id)
             waiting.status = 'EN'
             waiting.save()
             waitings = Waiting.objects.raw(
-                """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s LIMIT 2""" % (store_id, "'WA'"))
-            second_customer = User.objects.get(waiting_id=waitings[1]).token
-
-            notify.auto_notify(second_customer)
-
-
+                """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s LIMIT 1""" % (store_id, "'WA'"))
+            second_customer = User.objects.get(waiting_id=waitings[0]).token
+            if waiting_order == 1:
+                notify.auto_notify(second_customer)
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response('대기 1순위 손님에게 알림을 보냈습니다!', status=status.HTTP_200_OK)
-
-
-def search_waiting_order(waiting_id, store_id):
-    waiting_teams = Waiting.objects.filter(waiting_id__lt=waiting_id, store_id=store_id, status="WA")
-    waiting_order = len(waiting_teams) + 1
-    return waiting_order
 
 
 @api_view(['PATCH'])
