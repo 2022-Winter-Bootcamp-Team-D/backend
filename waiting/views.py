@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from store.models import Store
+from store.notification import notify
 from user.models import User
 from waiting.models import Waiting
 from waiting.serializer import WaitingSerializer
@@ -57,6 +58,26 @@ def waiting(request):
 
     if request.method == 'PATCH':
         waiting_id = request.data['waiting_id']
-        Waiting.objects.filter(waiting_id=waiting_id).update(status='CN')
+        store_id = request.data['store_id']
 
+        try:
+            waiting_order = search_waiting_order(waiting_id, store_id)
+            cancel_token = User.objects.get(waiting_id=waiting_id).token
+            Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
+            waiting_exist = True
+            try:
+                # 사용자가 취소한 가게의 웨이팅 리스트 반환
+                waitings = Waiting.objects.raw(
+                    """SELECT waiting_id
+                    FROM Waiting 
+                    WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
+                auto_token = User.objects.get(waiting_id=waitings[0]).token
+            except :
+                waiting_exist = False
+
+            # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
+            if waiting_order == 1 and waiting_exist:
+                notify.auto_notify(auto_token)
+        except:
+            return Response(status=400)
         return Response("성공적으로 취소 됐습니다.", status=200)
