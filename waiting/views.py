@@ -25,6 +25,7 @@ def waiting(request):
         token = request.data['token']
         status = "WA"
 
+        # 웨이팅 등록한  전화 번호로 이미 웨이팅이 존재할 경우
         waiting_check = Waiting.objects.filter(phone_num=phone_num, status="WA").exists()
         if waiting_check:
             return Response("웨이팅이 이미 존재합니다!", status=400)
@@ -41,14 +42,17 @@ def waiting(request):
         return Response(serializer.data, status=201)
 
     if request.method == 'GET':
-        db_data = Waiting.objects.get(phone_num=request.data["phone_num"],
+        # 전화 번호, 비밀 번호를 이용해서 웨이팅 중인 데이터 반환
+        try:
+            db_data = Waiting.objects.get(phone_num=request.data["phone_num"],
                                       password=request.data["password"],
                                       status="WA")
-        if db_data is None:
+        except:
             return Response("조회 결과가 없습니다.", status=404)
 
         waiting_id = db_data.waiting_id
         store_id = db_data.store_id
+        # 대기 순서 계산
         waiting_order = search_waiting_order(waiting_id, store_id)
 
         db_data.waiting_order = waiting_order
@@ -59,24 +63,21 @@ def waiting(request):
     if request.method == 'PATCH':
         waiting_id = request.data['waiting_id']
         store_id = request.data['store_id']
-
         try:
             waiting_order = search_waiting_order(waiting_id, store_id)
-            cancel_token = User.objects.get(waiting_id=waiting_id).token
             Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
-            waiting_exist = True
             try:
                 # 사용자가 취소한 가게의 웨이팅 리스트 반환
                 waitings = Waiting.objects.raw(
                     """SELECT waiting_id
                     FROM Waiting 
                     WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
-                auto_token = User.objects.get(waiting_id=waitings[0]).token
             except :
-                waiting_exist = False
+                return Response("성공적으로 취소 됐습니다.", status=200)
 
             # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
-            if waiting_order == 1 and waiting_exist:
+            auto_token = User.objects.get(waiting_id=waitings[0]).token
+            if waiting_order == 1:
                 notify.auto_notify(auto_token)
         except:
             return Response(status=400)
