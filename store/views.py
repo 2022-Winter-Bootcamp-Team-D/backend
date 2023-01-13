@@ -115,7 +115,7 @@ class waitings(APIView):
 
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        return Response('대기 1순위 손님에게 알림을 보냈다능', status=status.HTTP_200_OK)
+        return Response('대기 1순위 손님에게 알림을 보냈습니다!', status=status.HTTP_200_OK)
 
 
 @api_view(['PATCH'])
