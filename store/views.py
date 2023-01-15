@@ -128,9 +128,12 @@ class Waitings(APIView):
             waiting.save()
             waitings = Waiting.objects.raw(
                 """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s LIMIT 1""" % (store_id, "'WA'"))
-            second_customer = User.objects.get(waiting_id=waitings[0]).token
-            if waiting_order == 1:
-                notify.auto_notify(second_customer)
+            try:
+                second_customer = User.objects.get(waiting_id=waitings[0]).token
+                if waiting_order == 1:
+                    notify.auto_notify(second_customer)
+            except IndexError:
+                pass
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response('대기 1순위 손님에게 알림을 보냈습니다!', status=status.HTTP_200_OK)
