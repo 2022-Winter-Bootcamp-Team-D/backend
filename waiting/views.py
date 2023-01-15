@@ -1,8 +1,11 @@
+from django.db import transaction
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from store.models import Store
 from store.notification import notify
+from swagger.serializer import SwaggerWaitingsPatchSerializer, SwaggerWaitingListSerializer, SwaggerWaitingsPostSerializer
 from user.models import User
 from waiting.models import Waiting
 from waiting.serializer import WaitingSerializer
@@ -14,8 +17,9 @@ def search_waiting_order(waiting_id, store_id):
     return waiting_order
 
 
-class WaitingList(APIView):
-
+class WaitingsMy(APIView):
+    @swagger_auto_schema(tags=['Waiting'], request_body=SwaggerWaitingListSerializer)
+    @transaction.atomic
     def post(self, request):
         # 전화 번호, 비밀 번호를 이용해서 웨이팅 중인 데이터 반환
         try:
@@ -37,7 +41,8 @@ class WaitingList(APIView):
 
 
 class Waitings(APIView):
-
+    @swagger_auto_schema(tags=['Waiting'], request_body=SwaggerWaitingsPostSerializer)
+    @transaction.atomic
     def post(self, request):
         store_id = Store.objects.get(store_id=request.data["store_id"])
         phone_num = request.data['phone_num']
@@ -63,25 +68,26 @@ class Waitings(APIView):
 
         return Response(serializer.data, status=201)
 
+    @swagger_auto_schema(tags=['Waiting'], request_body=SwaggerWaitingsPatchSerializer)
+    @transaction.atomic
     def patch(self, request):
         waiting_id = request.data['waiting_id']
         store_id = request.data['store_id']
         try:
             waiting_order = search_waiting_order(waiting_id, store_id)
             Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
-            try:
+            if waiting_order == 1:
                 # 사용자가 취소한 가게의 웨이팅 리스트 반환
                 waitings = Waiting.objects.raw(
                     """SELECT waiting_id
                     FROM Waiting 
                     WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
-            except:
-                return Response("성공적으로 취소 됐습니다.", status=200)
-
-            # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
-            auto_token = User.objects.get(waiting_id=waitings[0]).token
-            if waiting_order == 1:
-                notify.auto_notify(auto_token)
+                try:
+                    # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
+                    auto_token = User.objects.get(waiting_id=waitings[0]).token
+                    notify.auto_notify(auto_token)
+                except IndexError:
+                    pass
         except:
             return Response(status=400)
         return Response("성공적으로 취소 됐습니다.", status=200)
