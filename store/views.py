@@ -8,7 +8,7 @@ from swagger.serializer import SwaggerStoreSigninSerializer, SwaggerStoreWaiting
     SwaggerStoreWaitingsPatchSerializer, SwaggerStoreEnterNotifySerializer, SwaggerStoreBreakTimeSerializer, \
     SwaggerStoreDetailSerializer
 from waiting.models import Waiting
-from user.models import User
+from users.models import User
 from .serializer import StoreJoinSerializer
 from .notification import notify
 
@@ -48,15 +48,14 @@ class Breaktime(APIView):
     @transaction.atomic
     def patch(self, request):
         store_id = request.data['store_id']
-
         try:
             object = Store.objects.get(store_id=store_id)
             object.is_waiting = not object.is_waiting
-            object = object.save()
-
+            result = object.is_waiting
+            object.save()
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_200_OK)
+        return Response(data={"is_waiting": result}, status=status.HTTP_200_OK)
 
 
 class Detail(APIView):
@@ -69,11 +68,11 @@ class Detail(APIView):
         try:
             object = Store.objects.get(store_id=store_id)
             object.information = information
-            object = object.save()
-
+            result = information
+            object.save()
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_200_OK)
+        return Response(data={"information": result}, status=status.HTTP_200_OK)
 
 
 # 가게의 웨이팅 목록, 상세정보, 웨이팅 받는지 여부를 반환

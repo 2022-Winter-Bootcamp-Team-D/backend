@@ -47,8 +47,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'store',
-    'user',
-    'waiting'
+    'users',
+    'waiting',
+    'backend'
 ]
 
 MIDDLEWARE = [
@@ -148,3 +149,9 @@ CORS_ORIGIN_WHITELIST = [
     'http://127.0.0.1:3000',
     'http://localhost:3000']
 CORS_ALLOW_CREDENTIALS = True
+
+AUTH_USER_MODEL = 'users.User'
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'

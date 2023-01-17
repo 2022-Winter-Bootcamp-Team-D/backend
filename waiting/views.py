@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from store.models import Store
 from store.notification import notify
 from swagger.serializer import SwaggerWaitingsPatchSerializer, SwaggerWaitingListSerializer, SwaggerWaitingsPostSerializer
-from user.models import User
+from users.models import User
 from waiting.models import Waiting
 from waiting.serializer import WaitingSerializer
 
