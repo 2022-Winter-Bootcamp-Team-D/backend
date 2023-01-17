@@ -8,7 +8,7 @@ from swagger.serializer import SwaggerStoreSigninSerializer, SwaggerStoreWaiting
     SwaggerStoreWaitingsPatchSerializer, SwaggerStoreEnterNotifySerializer, SwaggerStoreBreakTimeSerializer, \
     SwaggerStoreDetailSerializer
 from waiting.models import Waiting
-from user.models import User
+from users.models import User
 from .serializer import StoreJoinSerializer
 from .notification import notify
 

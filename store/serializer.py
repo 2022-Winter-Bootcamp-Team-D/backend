@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from store.models import Store
 from waiting.models import Waiting
-from user.models import User
+from users.models import User
 
 
 class StoreJoinSerializer(serializers.ModelSerializer):
