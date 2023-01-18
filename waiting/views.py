@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from store.models import Store
 from store.notification import notify
 from swagger.serializer import SwaggerWaitingsPatchSerializer, SwaggerWaitingListSerializer, SwaggerWaitingsPostSerializer
-from users.models import User
+from users.models import Token
 from waiting.models import Waiting
 from waiting.serializer import WaitingSerializer
 
@@ -59,7 +59,7 @@ class Waitings(APIView):
 
         result = Waiting.objects.create(store_id=store_id, name=name, phone_num=phone_num,
                                         people=people, password=password, status=status)
-        User.objects.create(waiting_id=result, token=token)
+        Token.objects.create(waiting_id=result, token=token)
         waiting_id = result.waiting_id
         waiting_order = search_waiting_order(waiting_id, store_id)
 
@@ -84,7 +84,7 @@ class Waitings(APIView):
                     WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
                 try:
                     # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
-                    auto_token = User.objects.get(waiting_id=waitings[0]).token
+                    auto_token = Token.objects.get(waiting_id=waitings[0]).token
                     notify.auto_notify(auto_token)
                 except IndexError:
                     pass
