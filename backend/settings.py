@@ -86,12 +86,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-HOST = os.environ.get('HOST')
-PORT = os.environ.get('PORT')
-NAME = os.environ.get('NAME')
-USER = os.environ.get('USER')
-
-PASSWORD = os.environ.get('PASSWORD')
+HOST = os.environ.get('POST_HOST')
+PORT = os.environ.get('POST_PORT')
+NAME = os.environ.get('POST_NAME')
+USER = os.environ.get('POST_USER')
+PASSWORD = os.environ.get('POST_PASSWORD')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
