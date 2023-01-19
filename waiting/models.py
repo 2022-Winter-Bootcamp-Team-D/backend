@@ -13,7 +13,6 @@ class Waiting(models.Model):
     name = models.CharField(max_length=10)
     phone_num = models.CharField(max_length=20)
     people = models.SmallIntegerField()
-    password = models.CharField(max_length=4)
     status = models.CharField(max_length=2, default='WA', choices=Status.choices)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
