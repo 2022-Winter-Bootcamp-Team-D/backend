@@ -44,9 +44,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'drf_yasg',
     'store',
-    'user',
-    'waiting'
+    'users',
+    'waiting',
+    'backend'
 ]
 
 MIDDLEWARE = [
@@ -83,12 +86,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-HOST = os.environ.get('HOST')
-PORT = os.environ.get('PORT')
-NAME = os.environ.get('NAME')
-USER = os.environ.get('USER')
-
-PASSWORD = os.environ.get('PASSWORD')
+HOST = os.environ.get('POST_HOST')
+PORT = os.environ.get('POST_PORT')
+NAME = os.environ.get('POST_NAME')
+USER = os.environ.get('POST_USER')
+PASSWORD = os.environ.get('POST_PASSWORD')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -146,3 +148,9 @@ CORS_ORIGIN_WHITELIST = [
     'http://127.0.0.1:3000',
     'http://localhost:3000']
 CORS_ALLOW_CREDENTIALS = True
+
+AUTH_USER_MODEL = 'users.User'
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
