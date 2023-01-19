@@ -123,7 +123,8 @@ def search(request):
             "store_name": store.store_name,
             "distance": i[1],
             "waiting": Waiting.objects.filter(store_id=store.store_id).count(),
-            "infomation": store.information
+            "is_waiting": store.is_waiting,
+            "information": store.information
         }
         data["data"].append(temp)
 
