@@ -131,12 +131,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-HOST = os.environ.get('HOST')
-PORT = os.environ.get('PORT')
-NAME = os.environ.get('NAME')
-USER = os.environ.get('USER')
-
-PASSWORD = os.environ.get('PASSWORD')
+HOST = os.environ.get('POST_HOST')
+PORT = os.environ.get('POST_PORT')
+NAME = os.environ.get('POST_NAME')
+USER = os.environ.get('POST_USER')
+PASSWORD = os.environ.get('POST_PASSWORD')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -200,6 +199,8 @@ AUTH_USER_MODEL = 'users.User'
 # ACCOUNT_USERNAME_REQUIRED = False도 함께 해줘야 한다.
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_USERNAME_REQUIRED = False
+
 # 로그인 인증방법 email일 경우 ACCOUNT_EMAIL_REQUIRED = True도 함께 해줘야 한다.
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
+

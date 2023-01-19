@@ -10,4 +10,5 @@ urlpatterns = [
     path('waitings/', views.Waitings.as_view()),
     path('cancellations/', views.Cancellations.as_view()),
     path('notifications/', views.Enter_notify.as_view()),
+    path('search/', views.search),
 ]

@@ -4,6 +4,8 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from django.db import connection
 from rest_framework.views import APIView
 from backend.models import Token
 from store.models import Store
@@ -239,3 +241,46 @@ class Cancellations(APIView):
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
+        
+        
+@api_view(['GET'])
+def search(request):
+    latitude = float(request.data['latitude'])
+    longitude = float(request.data['longitude'])
+    query = """
+                SELECT store_id, ST_DistanceSphere(
+                        ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
+                        ST_GeomFromText('POINT(%s %s)', 4326)
+                     ) as distance
+                FROM 
+                    store as a
+                WHERE 
+                    ST_DWithin(
+                        ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326)::geography,
+                        ST_GeomFromText('POINT(%s %s)', 4326)::geography,
+                        3000
+                        )
+                ORDER BY
+                    distance"""
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            query, [latitude, longitude, latitude, longitude]
+        )
+        result = cursor.fetchall()
+
+    data = {"data": []}
+
+    for i in result:
+        store = Store.objects.get(store_id=i[0])
+        temp = {
+            "store_id": i[0],
+            "store_name": store.store_name,
+            "distance": i[1],
+            "waiting": Waiting.objects.filter(store_id=store.store_id).count(),
+            "is_waiting": store.is_waiting,
+            "information": store.information
+        }
+        data["data"].append(temp)
+
+    return Response(data, status=status.HTTP_200_OK)
