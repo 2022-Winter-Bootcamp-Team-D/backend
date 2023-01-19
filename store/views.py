@@ -90,20 +90,31 @@ def cancellations(request):
 
 @api_view(['GET'])
 def search(request):
-    latitude = request.data['latitude']
-    longitude = request.data['longitude']
+    latitude = float(request.data['latitude'])
+    longitude = float(request.data['longitude'])
+    query = """
+                SELECT store_id, ST_DistanceSphere(
+                        ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
+                        ST_GeomFromText('POINT(%s %s)', 4326)
+                     ) as distance
+                FROM 
+                    store as a
+                WHERE 
+                    ST_DWithin(
+                        ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326)::geography,
+                        ST_GeomFromText('POINT(%s %s)', 4326)::geography,
+                        3000
+                        )
+                ORDER BY
+                    distance"""
 
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT "
-                "store_id, ST_DistanceSphere(ST_GeomFromText('POINT(' || longitude || ' ' || latitude || ')', 4326),"
-                    " ST_GeomFromText('POINT(%s %s)', 4326)) "
-            "FROM store", [latitude, longitude]
+            query, [latitude, longitude, latitude, longitude]
         )
         result = cursor.fetchall()
 
-    data = {}
-    data["data"] = []
+    data = {"data": []}
 
     for i in result:
         store = Store.objects.get(store_id=i[0])
