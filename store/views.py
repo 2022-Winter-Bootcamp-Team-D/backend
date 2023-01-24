@@ -9,9 +9,8 @@ from django.db import connection
 from rest_framework.views import APIView
 from backend.models import Token
 from store.models import Store
-from swagger.serializer import SwaggerStoreSigninSerializer, SwaggerStoreWaitingsPostSerializer, \
-    SwaggerStoreWaitingsPatchSerializer, SwaggerStoreEnterNotifySerializer, SwaggerStoreBreakTimeSerializer, \
-    SwaggerStoreDetailSerializer
+from swagger.serializer import SwaggerStoreSignupSerializer, SwaggerStoreWaitingsPatchSerializer, \
+    SwaggerStoreEnterNotifySerializer, SwaggerStoreDetailSerializer, SwaggerStoreLoginSerializer, get_token
 from users.serializer import StoreSignupSerializer
 from users.views import make_token
 from waiting.models import Waiting
@@ -31,7 +30,7 @@ def is_store(user_data):
 class Signup(APIView):
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreSigninSerializer)
+    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreSignupSerializer)
     @transaction.atomic
     def post(self, request):
         # store user 등록, 토큰 발급
@@ -43,8 +42,8 @@ class Signup(APIView):
             # store 등록
             store_name = request.data['name']
             phone_num = request.data['phone_num']
-            latitude = request.data['latitude']
-            longitude = request.data['longitude']
+            latitude = float(request.data['latitude'])
+            longitude = float(request.data['longitude'])
             try:
                 Store.objects.create(store_name=store_name, phone_num=phone_num, latitude=latitude,
                                      longitude=longitude, user_id=user)
@@ -59,6 +58,8 @@ class Signup(APIView):
 class Login(APIView):
     permission_classes = [AllowAny]
 
+    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreLoginSerializer)
+    @transaction.atomic
     def post(self, request):
         user = authenticate(
             email=request.data.get("email"), password=request.data.get("password")
@@ -77,7 +78,7 @@ class Login(APIView):
 
 # 대기자 호출
 class Enter_notify(APIView):
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreEnterNotifySerializer)
+    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreEnterNotifySerializer, manual_parameters=[get_token()])
     @transaction.atomic
     def post(self, request):
         user = search_user(request)
@@ -92,7 +93,7 @@ class Enter_notify(APIView):
 
 # 대기 등록 마감
 class Breaktime(APIView):
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreBreakTimeSerializer)
+    @swagger_auto_schema(tags=['Store'], manual_parameters=[get_token()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)
@@ -113,7 +114,7 @@ class Breaktime(APIView):
 
 # 가게 상세 정보 수정
 class Detail(APIView):
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreDetailSerializer)
+    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreDetailSerializer, manual_parameters=[get_token()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)
@@ -169,9 +170,9 @@ def search_waiting_order(waiting_id, store_id):
 # 대기자 입장, 대기자 조회
 class Waitings(APIView):
 
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreWaitingsPostSerializer)
+    @swagger_auto_schema(tags=['Store'], manual_parameters=[get_token()])
     @transaction.atomic
-    def post(self, request):
+    def get(self, request):
         user = search_user(request)
         role_check = is_store(user)
         if role_check:
@@ -181,7 +182,7 @@ class Waitings(APIView):
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreWaitingsPatchSerializer)
+    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreWaitingsPatchSerializer, manual_parameters=[get_token()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)
@@ -212,7 +213,7 @@ class Waitings(APIView):
 
 # 웨이팅 강제 취소
 class Cancellations(APIView):
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreWaitingsPatchSerializer)
+    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreWaitingsPatchSerializer, manual_parameters=[get_token()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)
@@ -241,8 +242,8 @@ class Cancellations(APIView):
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
-        
-        
+
+
 @api_view(['GET'])
 def search(request):
     latitude = float(request.data['latitude'])

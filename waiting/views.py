@@ -8,10 +8,11 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from backend.models import Token
 from store.models import Store
 from store.notification import notify
-from swagger.serializer import SwaggerWaitingsPatchSerializer, SwaggerWaitingListSerializer, SwaggerWaitingsPostSerializer
+from swagger.serializer import SwaggerWaitingsPostSerializer
 from users.models import User
 from waiting.models import Waiting
 from waiting.serializer import WaitingSerializer
+from swagger.serializer import get_token
 
 
 # 대기 순서
@@ -39,7 +40,7 @@ def is_auth(user_data):
 
 
 class Waitings(APIView):
-    @swagger_auto_schema(tags=['Waiting'], request_body=SwaggerWaitingListSerializer)
+    @swagger_auto_schema(tags=['Waiting'], manual_parameters=[get_token()])
     @transaction.atomic
     def get(self, request):
         user = search_user(request)
@@ -48,7 +49,7 @@ class Waitings(APIView):
             # 전화 번호, 비밀 번호를 이용해서 웨이팅 중인 데이터 반환
             try:
                 user_id = user.user_id
-                user_data = User.objects.get(user_id=user_id)
+                user_data = User.objects.get(id=user_id)
                 phone_num = user_data.phone_num
                 db_data = Waiting.objects.get(phone_num=phone_num,
                                               status="WA")
@@ -67,7 +68,7 @@ class Waitings(APIView):
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-    @swagger_auto_schema(tags=['Waiting'], request_body=SwaggerWaitingsPostSerializer)
+    @swagger_auto_schema(tags=['Waiting'], request_body=SwaggerWaitingsPostSerializer, manual_parameters=[get_token()])
     @transaction.atomic
     def post(self, request):
         user = search_user(request)
@@ -76,7 +77,7 @@ class Waitings(APIView):
             phone_num = user.phone_num
             name = user.name
             store_id = Store.objects.get(store_id=request.data["store_id"])
-            people = request.data["people"]
+            people = int(request.data["people"])
             token = request.data['token']
 
             # 웨이팅 등록한  전화 번호로 이미 웨이팅이 존재할 경우
@@ -97,7 +98,7 @@ class Waitings(APIView):
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-    @swagger_auto_schema(tags=['Waiting'], request_body=SwaggerWaitingsPatchSerializer)
+    @swagger_auto_schema(tags=['Waiting'], manual_parameters=[get_token()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)

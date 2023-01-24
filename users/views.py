@@ -1,10 +1,13 @@
 from django.contrib.auth import authenticate
+from django.db import transaction
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from swagger.serializer import SwaggerUserSignupSerializer, SwaggerUserSigninSerializer
 from users.models import User
 from users.serializer import SignupSerializer
 
@@ -23,9 +26,11 @@ def make_token(user):
     return res
 
 
-class SignupAPIView(APIView):
+class Signup(APIView):
     permission_classes = [AllowAny]
 
+    @swagger_auto_schema(tags=['User'], request_body=SwaggerUserSignupSerializer)
+    @transaction.atomic
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
@@ -35,9 +40,11 @@ class SignupAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SigninView(APIView):
+class Signin(APIView):
     permission_classes = [AllowAny]
 
+    @swagger_auto_schema(tags=['User'], request_body=SwaggerUserSigninSerializer)
+    @transaction.atomic
     def post(self, request):
         user = authenticate(
             email=request.data.get("email"), password=request.data.get("password")
