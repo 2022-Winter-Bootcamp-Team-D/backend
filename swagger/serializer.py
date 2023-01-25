@@ -1,55 +1,69 @@
+from drf_yasg import openapi
 from rest_framework import serializers
 
 
-class SwaggerWaitingListSerializer(serializers.Serializer):
-    phone_num = serializers.CharField(help_text='phone_num')
-    password = serializers.CharField(help_text='password')
-
-
-class SwaggerWaitingsPatchSerializer(serializers.Serializer):
-    waiting_id = serializers.IntegerField(help_text='waiting_id')
-    store_id = serializers.IntegerField(help_text='store_id')
-
-
+# Waiting
 class SwaggerWaitingsPostSerializer(serializers.Serializer):
     store_id = serializers.IntegerField(help_text='store_id')
-    phone_num = serializers.CharField(help_text='phone_num')
-    password = serializers.CharField(help_text='password')
-    name = serializers.CharField(help_text='name')
-    people = serializers.IntegerField(help_text='people')
+    people = serializers.CharField(help_text='people')
     token = serializers.CharField(help_text='token')
 
 
-class SwaggerStoreSigninSerializer(serializers.Serializer):
+# Store
+class SwaggerStoreSignupSerializer(serializers.Serializer):
     phone_num = serializers.CharField(help_text='phone_num')
     password = serializers.CharField(help_text='password')
-    store_name = serializers.CharField(help_text='password')
-    latitude = serializers.DecimalField(help_text='password', max_digits=10, decimal_places=6)
-    longitude = serializers.DecimalField(help_text='password', max_digits=10, decimal_places=6)
+    name = serializers.CharField(help_text='name')
+    email = serializers.EmailField(help_text='email', max_length=255)
+    latitude = serializers.DecimalField(help_text='latitude', max_digits=10, decimal_places=6)
+    longitude = serializers.DecimalField(help_text='longitude', max_digits=10, decimal_places=6)
+
+
+class SwaggerStoreLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(help_text='email')
+    password = serializers.CharField(help_text='password')
 
 
 class SwaggerStoreEnterNotifySerializer(serializers.Serializer):
     token = serializers.CharField(help_text='token')
 
 
-class SwaggerStoreBreakTimeSerializer(serializers.Serializer):
-    store_id = serializers.IntegerField(help_text='store_id')
-
-
 class SwaggerStoreDetailSerializer(serializers.Serializer):
-    store_id = serializers.IntegerField(help_text='store_id')
     information = serializers.CharField(help_text='information')
-
-
-class SwaggerStoreWaitingsPostSerializer(serializers.Serializer):
-    store_id = serializers.IntegerField(help_text='store_id')
 
 
 class SwaggerStoreWaitingsPatchSerializer(serializers.Serializer):
     waiting_id = serializers.IntegerField(help_text='waiting_id')
-    store_id = serializers.IntegerField(help_text='store_id')
 
 
 class SwaggerStoreCancellationsSerializer(serializers.Serializer):
     waiting_id = serializers.IntegerField(help_text='waiting_id')
-    store_id = serializers.IntegerField(help_text='store_id')
+
+
+class SwaggerStoreSearchSerializer(serializers.Serializer):
+    latitude = serializers.DecimalField(help_text='latitude', max_digits=10, decimal_places=6)
+    longitude = serializers.DecimalField(help_text='longitude', max_digits=10, decimal_places=6)
+
+
+# User
+class SwaggerUserSignupSerializer(serializers.Serializer):
+    name = serializers.CharField(help_text='store_name')
+    password = serializers.CharField(help_text='password')
+    email = serializers.EmailField(help_text='email')
+    phone_num = serializers.CharField(help_text='phone_num')
+
+
+class SwaggerUserSigninSerializer(serializers.Serializer):
+    email = serializers.EmailField(help_text='email')
+    password = serializers.CharField(help_text='password')
+
+
+# Header
+def get_token():
+    parameter_token = openapi.Parameter(
+        "Authorization",
+        openapi.IN_HEADER,
+        description="access_token",
+        type=openapi.TYPE_STRING
+    )
+    return parameter_token
