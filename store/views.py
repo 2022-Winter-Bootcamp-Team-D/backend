@@ -271,7 +271,7 @@ class Search(APIView):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                query, [latitude, longitude, latitude, longitude]
+                query, [longitude, latitude, longitude, latitude]
             )
             result = cursor.fetchall()
 
