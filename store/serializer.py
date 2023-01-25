@@ -35,3 +35,10 @@ class StoreWaitingsSerializer(serializers.ModelSerializer):
             'people',
             'phone_num'
         ]
+
+
+class StoreSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Store
+        fields = "__all__"

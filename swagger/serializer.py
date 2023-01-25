@@ -40,6 +40,11 @@ class SwaggerStoreCancellationsSerializer(serializers.Serializer):
     waiting_id = serializers.IntegerField(help_text='waiting_id')
 
 
+class SwaggerStoreSearchSerializer(serializers.Serializer):
+    latitude = serializers.DecimalField(help_text='latitude', max_digits=10, decimal_places=6)
+    longitude = serializers.DecimalField(help_text='longitude', max_digits=10, decimal_places=6)
+
+
 # User
 class SwaggerUserSignupSerializer(serializers.Serializer):
     name = serializers.CharField(help_text='store_name')
