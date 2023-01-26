@@ -269,11 +269,19 @@ class Search(APIView):
                     ORDER BY
                         distance"""
 
-        with connection.cursor() as cursor:
-            cursor.execute(
-                query, [longitude, latitude, longitude, latitude]
-            )
-            result = cursor.fetchall()
+    for i in result:
+        store = Store.objects.get(store_id=i[0])
+        temp = {
+            "store_id": i[0],
+            "store_name": store.store_name,
+            "distance": i[1],
+            "waiting": Waiting.objects.filter(store_id=store.store_id).count(),
+            "is_waiting": store.is_waiting,
+            "information": store.information,
+            "latitude": store.latitude,
+            "longitude": store.longitude
+        }
+        data["data"].append(temp)
 
         data = {"data": []}
 
