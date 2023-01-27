@@ -175,7 +175,8 @@ def search_waitings(store_id):
 
 # 대기 순서
 def search_waiting_order(waiting_id, store_id):
-    waiting_teams = Waiting.objects.filter(waiting_id__lt=waiting_id, store_id=store_id, status="WA")
+    waiting_teams = Waiting.objects.filter(
+        waiting_id__lt=waiting_id, store_id=store_id, status="WA")
     waiting_order = len(waiting_teams) + 1
     return waiting_order
 
@@ -207,7 +208,8 @@ class Waitings(APIView):
                 """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s LIMIT 1""" % (
                     store_id, "'WA'"))
             try:
-                second_customer = Token.objects.get(waiting_id=waitings[0]).token
+                second_customer = Token.objects.get(
+                    waiting_id=waitings[0]).token
                 if waiting_order == 1:
                     notify.auto_notify(second_customer)
             except IndexError:
@@ -230,13 +232,15 @@ class Cancellations(APIView):
         cancel_token = Token.objects.get(waiting_id=waiting_id).token
 
         # status를 CN(CANCEL)로 바꿔주고 취소 알림 보내기
-        Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
+        Waiting.objects.filter(waiting_id=waiting_id,
+                               store_id=store_id).update(status='CN')
         notify.cancel_notify(cancel_token)
 
         # 가게의 웨이팅 리스트, 상세 정보, 웨이팅 받는지 여부를 받아 온다.
         data = search_waitings(store_id)
         try:
-            auto_token = Token.objects.get(waiting_id=data["data"][0]['waiting_id']).token
+            auto_token = Token.objects.get(
+                waiting_id=data["data"][0]['waiting_id']).token
 
             # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
             if waiting_order == 1:
@@ -269,22 +273,6 @@ class Search(APIView):
                     ORDER BY
                         distance"""
 
-    for i in result:
-        store = Store.objects.get(store_id=i[0])
-        temp = {
-            "store_id": i[0],
-            "store_name": store.store_name,
-            "distance": i[1],
-            "waiting": Waiting.objects.filter(store_id=store.store_id).count(),
-            "is_waiting": store.is_waiting,
-            "information": store.information,
-            "latitude": store.latitude,
-            "longitude": store.longitude
-        }
-        data["data"].append(temp)
-
-        data = {"data": []}
-
         for i in result:
             store = Store.objects.get(store_id=i[0])
             temp = {
@@ -293,8 +281,24 @@ class Search(APIView):
                 "distance": i[1],
                 "waiting": Waiting.objects.filter(store_id=store.store_id).count(),
                 "is_waiting": store.is_waiting,
-                "information": store.information
+                "information": store.information,
+                "latitude": store.latitude,
+                "longitude": store.longitude
             }
             data["data"].append(temp)
 
-        return Response(data, status=status.HTTP_200_OK)
+            data = {"data": []}
+
+            for i in result:
+                store = Store.objects.get(store_id=i[0])
+                temp = {
+                    "store_id": i[0],
+                    "store_name": store.store_name,
+                    "distance": i[1],
+                    "waiting": Waiting.objects.filter(store_id=store.store_id).count(),
+                    "is_waiting": store.is_waiting,
+                    "information": store.information
+                }
+                data["data"].append(temp)
+
+            return Response(data, status=status.HTTP_200_OK)
