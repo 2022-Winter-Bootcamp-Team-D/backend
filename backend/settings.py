@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'store',
     'users',
     'waiting',
-    'backend'
+    'backend',
+    'django_prometheus'
 ]
 
 REST_USE_JWT = True
