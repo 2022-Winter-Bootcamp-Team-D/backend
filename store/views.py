@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.core.cache import cache
 from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -11,7 +12,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from backend.models import Token
 from store.models import Store
 from swagger.serializer import SwaggerStoreSignupSerializer, SwaggerStoreWaitingsPatchSerializer, \
-    SwaggerStoreEnterNotifySerializer, SwaggerStoreDetailSerializer, SwaggerStoreLoginSerializer, get_token, \
+    SwaggerStoreEnterNotifySerializer, SwaggerStoreDetailSerializer, SwaggerStoreLoginSerializer, header_authorization, \
     SwaggerStoreSearchSerializer
 from users.serializer import StoreUserSignupSerializer, SigninSerializer
 from waiting.models import Waiting
@@ -56,8 +57,7 @@ class Signup(APIView):
                 },
                 status=status.HTTP_201_CREATED,
             )
-            # jwt 토큰 => 쿠키에 저장
-            res.set_cookie("refresh", refresh_token, httponly=True)
+            cache.set(access_token, refresh_token, 60 * 60 * 3)
             return res
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -92,8 +92,7 @@ class Login(APIView):
                     },
                     status=status.HTTP_200_OK,
                 )
-                # jwt 토큰 => 쿠키에 저장
-                res.set_cookie("refresh", refresh_token, httponly=True)
+                cache.set(access_token, refresh_token, 60 * 60 * 3)
                 return res
             else:
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -104,17 +103,18 @@ class Login(APIView):
 # 대기자 호출
 class Enter_notify(APIView):
     @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreEnterNotifySerializer,
-                         manual_parameters=[get_token()])
+                         manual_parameters=[header_authorization()])
     @transaction.atomic
     def post(self, request):
-        # result = notify.enter_notify(request)
-        notify.enter_notify(token=request.data['token'])
+        user = search_user(request)
+        token = Token.objects.get(waiting_id=request.data['waiting_id']).token
+        notify.enter_notify(token=token)
         return Response('호출에 성공했습니다!', status=status.HTTP_200_OK)
 
 
 # 대기 등록 마감
 class Breaktime(APIView):
-    @swagger_auto_schema(tags=['Store'], manual_parameters=[get_token()])
+    @swagger_auto_schema(tags=['Store'], manual_parameters=[header_authorization()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)
@@ -131,7 +131,7 @@ class Breaktime(APIView):
 
 # 가게 상세 정보 수정
 class Detail(APIView):
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreDetailSerializer, manual_parameters=[get_token()])
+    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreDetailSerializer, manual_parameters=[header_authorization()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)
@@ -183,7 +183,7 @@ def search_waiting_order(waiting_id, store_id):
 # 대기자 입장, 대기자 조회
 class Waitings(APIView):
 
-    @swagger_auto_schema(tags=['Store'], manual_parameters=[get_token()])
+    @swagger_auto_schema(tags=['Store'], manual_parameters=[header_authorization()])
     @transaction.atomic
     def get(self, request):
         user = search_user(request)
@@ -192,7 +192,7 @@ class Waitings(APIView):
         return Response(data, status=status.HTTP_200_OK, content_type="text/json-comment-filtered")
 
     @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreWaitingsPatchSerializer,
-                         manual_parameters=[get_token()])
+                         manual_parameters=[header_authorization()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)
@@ -206,6 +206,7 @@ class Waitings(APIView):
             waitings = Waiting.objects.raw(
                 """SELECT waiting_id, name, people, phone_num FROM Waiting WHERE store_id=%s AND status=%s LIMIT 1""" % (
                     store_id, "'WA'"))
+            data = search_waitings(store_id)
             try:
                 second_customer = Token.objects.get(waiting_id=waitings[0]).token
                 if waiting_order == 1:
@@ -214,13 +215,13 @@ class Waitings(APIView):
                 pass
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        return Response('대기 1순위 손님에게 알림을 보냈습니다!', status=status.HTTP_200_OK)
+        return Response(data, status=status.HTTP_200_OK)
 
 
 # 웨이팅 강제 취소
 class Cancellations(APIView):
     @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreWaitingsPatchSerializer,
-                         manual_parameters=[get_token()])
+                         manual_parameters=[header_authorization()])
     @transaction.atomic
     def patch(self, request):
         user = search_user(request)
@@ -248,9 +249,10 @@ class Cancellations(APIView):
 
 
 class Search(APIView):
-    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreSearchSerializer, manual_parameters=[get_token()])
+    @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreSearchSerializer, manual_parameters=[header_authorization()])
     @transaction.atomic
     def post(self, request):
+        user = search_user(request)
         latitude = float(request.data['latitude'])
         longitude = float(request.data['longitude'])
         query = """

@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.core.cache import cache
 from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -32,8 +33,7 @@ class Signup(APIView):
                 },
                 status=status.HTTP_201_CREATED,
             )
-            # jwt 토큰 => 쿠키에 저장
-            res.set_cookie("refresh", refresh_token, httponly=True)
+            cache.set(access_token, refresh_token, 60 * 60 * 3)
             return res
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -63,8 +63,7 @@ class Signin(APIView):
                     },
                     status=status.HTTP_200_OK,
                 )
-                # jwt 토큰 => 쿠키에 저장
-                res.set_cookie("refresh", refresh_token, httponly=True)
+                cache.set(access_token, refresh_token, 60*60*3)
                 return res
             else:
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
