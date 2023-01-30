@@ -183,6 +183,7 @@ def search_waiting_order(waiting_id, store_id):
 
 # 대기자 입장, 대기자 조회
 class Waitings(APIView):
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(tags=['Store'], manual_parameters=[get_token()])
     @transaction.atomic
