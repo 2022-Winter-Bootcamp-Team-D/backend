@@ -1,13 +1,6 @@
 from rest_framework import serializers
 from store.models import Store
 from waiting.models import Waiting
-from user.models import User
-
-
-class StoreJoinSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Store
-        fields = ('store_id',)
 
 
 class StoreBreaktimeSerializer(serializers.ModelSerializer):
@@ -42,3 +35,10 @@ class StoreWaitingsSerializer(serializers.ModelSerializer):
             'people',
             'phone_num'
         ]
+
+
+class StoreSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Store
+        fields = "__all__"
