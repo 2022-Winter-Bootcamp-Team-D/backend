@@ -59,7 +59,7 @@ class SwaggerUserSigninSerializer(serializers.Serializer):
 
 
 # Header
-def get_token():
+def header_authorization():
     parameter_token = openapi.Parameter(
         "Authorization",
         openapi.IN_HEADER,
