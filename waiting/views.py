@@ -68,15 +68,18 @@ class Waitings(APIView):
             phone_num = user.phone_num
             db_data = Waiting.objects.get(phone_num=phone_num,
                                           status="WA")
+            store = Store.objects.get(store_id=db_data.store_id_id)
         except:
             return Response("조회 결과가 없습니다.", status=404)
 
         waiting_id = db_data.waiting_id
-        store_id = db_data.store_id
+        store_id = store.store_id
+        store_name = store.store_name
         # 대기 순서 계산
         waiting_order = search_waiting_order(waiting_id, store_id)
 
         db_data.waiting_order = waiting_order
+        db_data.store_name = store_name
         serializer = WaitingSerializer(db_data)
         return Response(serializer.data, status=200)
 
