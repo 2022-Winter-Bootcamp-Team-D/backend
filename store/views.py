@@ -259,7 +259,6 @@ class Search(APIView):
     @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreSearchSerializer, manual_parameters=[header_authorization()])
     @transaction.atomic
     def post(self, request):
-        inputData()
         user = search_user(request)
         latitude = float(request.data['latitude'])
         longitude = float(request.data['longitude'])

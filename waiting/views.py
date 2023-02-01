@@ -92,7 +92,7 @@ class Waitings(APIView):
         user = search_user(request)
         phone_num = user.phone_num
         name = user.name
-        store_id = Store.objects.get(store_id=request.data["store_id"])
+        store = Store.objects.get(store_id=request.data["store_id"])
         people = int(request.data["people"])
         token = request.data['token']
 
@@ -102,13 +102,14 @@ class Waitings(APIView):
         if waiting_check:
             return Response("웨이팅이 이미 존재합니다!", status=400)
 
-        result = Waiting.objects.create(store_id=store_id, name=name, phone_num=phone_num,
+        result = Waiting.objects.create(store_id=store, name=name, phone_num=phone_num,
                                         people=people, status="WA")
         Token.objects.create(waiting_id=result, token=token)
         waiting_id = result.waiting_id
-        waiting_order = search_waiting_order(waiting_id, store_id)
+        waiting_order = search_waiting_order(waiting_id, store)
 
         result.waiting_order = waiting_order
+        result.store_name = store.store_name
         serializer = WaitingSerializer(result)
         return Response(serializer.data, status=201)
 
