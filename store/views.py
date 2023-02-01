@@ -309,7 +309,7 @@ class Word(APIView):
     # @transaction.atomic
     def get(self, request):
         es = Elasticsearch([{
-            'host': 'localhost',
+            'host': 'elastic',
             'port': 9200
         }])
         inputData(es)
