@@ -20,6 +20,8 @@ from users.models import User
 from waiting.views import search_user
 from .notification import notify
 from .serializer import StoreSerializer
+from elasticsearch import Elasticsearch
+import json
 
 
 # 가게 회원 가입
@@ -257,6 +259,7 @@ class Search(APIView):
     @swagger_auto_schema(tags=['Store'], request_body=SwaggerStoreSearchSerializer, manual_parameters=[header_authorization()])
     @transaction.atomic
     def post(self, request):
+        inputData()
         user = search_user(request)
         latitude = float(request.data['latitude'])
         longitude = float(request.data['longitude'])
@@ -298,3 +301,84 @@ class Search(APIView):
             data["data"].append(temp)
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class Word(APIView):
+    permission_classes = [AllowAny]
+
+    # @transaction.atomic
+    def get(self, request):
+        es = Elasticsearch([{
+            'host': 'elastic',
+            'port': 9200
+        }])
+        inputData(es)
+
+        search_word = request.GET['search']
+
+        if not search_word:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': 'search word param is missing'})
+
+        docs = es.search(
+            index='dictionary',
+            body={
+                "query": {
+                    "multi_match": {
+                        "query": search_word,
+                        "fields": [
+                            "store_name",
+                            "information"
+                        ]
+                    }
+                }
+            })
+
+        data_list = []
+        for data in docs['hits']['hits']:
+            data_list.append(data.get('_source'))
+
+        return Response(data_list)
+
+
+def inputData(es):
+    if es.indices.exists(index='dictionary'):
+        pass
+    else:
+        es.indices.create(
+            index='dictionary',
+            body={
+                "settings": {
+                    "index": {
+                        "analysis": {
+                            "analyzer": {
+                                "my_analyzer": {
+                                    "type": "custom",
+                                    "tokenizer": "nori_tokenizer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "mappings": {
+                    "properties": {
+                        "id": {
+                            "type": "long"
+                        },
+                        "store_name": {
+                            "type": "text",
+                            "analyzer": "my_analyzer"
+                        },
+                    }
+                }
+            }
+        )
+
+        with open("./store/dictionary_data.json", encoding='utf-8') as json_file:
+            json_data = json.loads(json_file.read())
+
+        body = ""
+        for i in json_data:
+            body = body + json.dumps({"index": {"_index": "dictionary"}}) + '\n'
+            body = body + json.dumps(i, ensure_ascii=False) + '\n'
+
+        es.bulk(body)
