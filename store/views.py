@@ -363,6 +363,10 @@ def inputData(es):
                             "type": "text",
                             "analyzer": "my_analyzer"
                         },
+                        "information": {
+                            "type": "text",
+                            "analyzer": "my_analyzer"
+                        },
                     }
                 }
             }
@@ -377,6 +381,7 @@ def inputData(es):
             body = body + json.dumps(i, ensure_ascii=False) + '\n'
 
         es.bulk(body)
+
 
 def getAroundStore(longitude, latitude):
     query = """
