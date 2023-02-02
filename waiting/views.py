@@ -19,7 +19,8 @@ from swagger.serializer import header_authorization
 
 # 대기 순서
 def search_waiting_order(waiting_id, store_id):
-    waiting_teams = Waiting.objects.filter(waiting_id__lt=waiting_id, store_id=store_id, status="WA")
+    waiting_teams = Waiting.objects.filter(
+        waiting_id__lt=waiting_id, store_id=store_id, status="WA")
     waiting_order = len(waiting_teams) + 1
     return waiting_order
 
@@ -48,7 +49,8 @@ def get_validated_token(raw_token):
                     "refresh": refresh_token
                 }
                 url = 'http://127.0.0.1:8000/api/v1/auth/user/refresh/'
-                response = requests.request(method='post', url=url, data=refresh)
+                response = requests.request(
+                    method='post', url=url, data=refresh)
                 access_token = response.text
                 access_token = access_token[11:]
                 access_token = access_token[:-2]
@@ -95,7 +97,8 @@ class Waitings(APIView):
         token = request.data['token']
 
         # 웨이팅 등록한  전화 번호로 이미 웨이팅이 존재할 경우
-        waiting_check = Waiting.objects.filter(phone_num=phone_num, status="WA").exists()
+        waiting_check = Waiting.objects.filter(
+            phone_num=phone_num, status="WA").exists()
         if waiting_check:
             return Response("웨이팅이 이미 존재합니다!", status=400)
 
@@ -117,10 +120,12 @@ class Waitings(APIView):
         phone_num = user.phone_num
         waiting = Waiting.objects.get(phone_num=phone_num, status='WA')
         waiting_id = waiting.waiting_id
-        store_id = waiting.store_id.store_id  # waiting 테이블에서 store_id가 외래키 이므로 waiting.store_id=Store(객체)이다.
+        # waiting 테이블에서 store_id가 외래키 이므로 waiting.store_id=Store(객체)이다.
+        store_id = waiting.store_id.store_id
         try:
             waiting_order = search_waiting_order(waiting_id, store_id)
-            Waiting.objects.filter(waiting_id=waiting_id, store_id=store_id).update(status='CN')
+            Waiting.objects.filter(waiting_id=waiting_id,
+                                   store_id=store_id).update(status='CN')
             if waiting_order == 1:
                 # 사용자가 취소한 가게의 웨이팅 리스트 반환
                 waitings = Waiting.objects.raw(
@@ -129,7 +134,8 @@ class Waitings(APIView):
                     WHERE store_id=%s AND status=%s""" % (store_id, "'WA'"))
                 try:
                     # 취소한 웨이팅이 1순위였고 다음 웨이팅 팀이 존재할 경우 다음 팀에게 1순위 알림 보내기
-                    auto_token = Token.objects.get(waiting_id=waitings[0]).token
+                    auto_token = Token.objects.get(
+                        waiting_id=waitings[0]).token
                     notify.auto_notify(auto_token)
                 except:
                     pass

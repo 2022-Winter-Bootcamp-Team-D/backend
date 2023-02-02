@@ -262,30 +262,10 @@ class Search(APIView):
         user = search_user(request)
         latitude = float(request.data['latitude'])
         longitude = float(request.data['longitude'])
-        query = """
-                    SELECT store_id, ST_DistanceSphere(
-                            ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
-                            ST_GeomFromText('POINT(%s %s)', 4326)
-                         ) as distance
-                    FROM 
-                        store as a
-                    WHERE 
-                        ST_DWithin(
-                            ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326)::geography,
-                            ST_GeomFromText('POINT(%s %s)', 4326)::geography,
-                            3000
-                            )
-                    ORDER BY
-                        distance"""
-        with connection.cursor() as cursor:
-            cursor.execute(
-                query, [longitude, latitude, longitude, latitude]
-            )
-            result = cursor.fetchall()
 
         data = {"data": []}
 
-        for i in result:
+        for i in getAroundStore(longitude, latitude):
             store = Store.objects.get(store_id=i[0])
             temp = {
                 "store_id": i[0],
@@ -314,6 +294,8 @@ class Word(APIView):
         inputData(es)
 
         search_word = request.GET['search']
+        latitude = request.GET['latitude']
+        longitude = request.GET['longitude']
 
         if not search_word:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': 'search word param is missing'})
@@ -334,9 +316,23 @@ class Word(APIView):
 
         data_list = []
         for data in docs['hits']['hits']:
-            data_list.append(data.get('_source'))
+            data_list.append(int(data.get('_source').get('id')))
+            # store_id = data.get('_source').get('id')
+        data = {"data": []}
 
-        return Response(data_list)
+        for i in getDistance(tuple(data_list), longitude, latitude):
+            store = Store.objects.get(store_id=i[0])
+            temp = {
+                "store_id": i[0],
+                "store_name": store.store_name,
+                "distance": i[4],
+                "waiting": Waiting.objects.filter(store_id=store.store_id).count(),
+                "is_waiting": store.is_waiting,
+                "information": store.information
+            }
+            data["data"].append(temp)
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 def inputData(es):
@@ -367,6 +363,10 @@ def inputData(es):
                             "type": "text",
                             "analyzer": "my_analyzer"
                         },
+                        "information": {
+                            "type": "text",
+                            "analyzer": "my_analyzer"
+                        },
                     }
                 }
             }
@@ -381,3 +381,60 @@ def inputData(es):
             body = body + json.dumps(i, ensure_ascii=False) + '\n'
 
         es.bulk(body)
+
+
+def getAroundStore(longitude, latitude):
+    query = """
+                        SELECT store_id, ST_DistanceSphere(
+                                ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
+                                ST_GeomFromText('POINT(%s %s)', 4326)
+                             ) as distance
+                        FROM 
+                            store as a
+                        WHERE 
+                            ST_DWithin(
+                                ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326)::geography,
+                                ST_GeomFromText('POINT(%s %s)', 4326)::geography,
+                                3000
+                                )
+                        ORDER BY
+                            distance"""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            query, [longitude, latitude, longitude, latitude]
+        )
+        result = cursor.fetchall()
+
+
+def getDistance(data_list, longitude, latitude):
+    if len(data_list) > 1:
+        query = """
+                            SELECT store_id, store_name, information, is_waiting, ST_DistanceSphere(
+                                    ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
+                                    ST_GeomFromText('POINT({} {})', 4326)
+                                 ) as distance   
+                            FROM 
+                                store as a
+                            WHERE 
+                                store_id in {} 
+                            ORDER BY
+                                distance""".format(longitude, latitude, data_list)
+    elif len(data_list) == 1:
+        query = """
+                                    SELECT store_id, store_name, information, is_waiting, ST_DistanceSphere(
+                                            ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
+                                            ST_GeomFromText('POINT({} {})', 4326)
+                                         ) as distance   
+                                    FROM 
+                                        store as a
+                                    WHERE 
+                                        store_id = {}
+                                    ORDER BY
+                                        distance""".format(longitude, latitude, data_list[0])
+    else:
+        return []
+    with connection.cursor() as cursor:
+        cursor.execute(
+            query
+        )
+        return cursor.fetchall()

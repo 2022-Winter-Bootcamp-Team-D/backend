@@ -21,4 +21,3 @@ class WaitingSerializer(serializers.ModelSerializer):
             'people',
             'create_at'
         ]
-
