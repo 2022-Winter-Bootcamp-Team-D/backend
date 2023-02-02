@@ -262,30 +262,10 @@ class Search(APIView):
         user = search_user(request)
         latitude = float(request.data['latitude'])
         longitude = float(request.data['longitude'])
-        query = """
-                    SELECT store_id, ST_DistanceSphere(
-                            ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
-                            ST_GeomFromText('POINT(%s %s)', 4326)
-                         ) as distance
-                    FROM 
-                        store as a
-                    WHERE 
-                        ST_DWithin(
-                            ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326)::geography,
-                            ST_GeomFromText('POINT(%s %s)', 4326)::geography,
-                            3000
-                            )
-                    ORDER BY
-                        distance"""
-        with connection.cursor() as cursor:
-            cursor.execute(
-                query, [longitude, latitude, longitude, latitude]
-            )
-            result = cursor.fetchall()
 
         data = {"data": []}
 
-        for i in result:
+        for i in getAroundStore(longitude, latitude):
             store = Store.objects.get(store_id=i[0])
             temp = {
                 "store_id": i[0],
@@ -381,3 +361,59 @@ def inputData(es):
             body = body + json.dumps(i, ensure_ascii=False) + '\n'
 
         es.bulk(body)
+
+def getAroundStore(longitude, latitude):
+    query = """
+                        SELECT store_id, ST_DistanceSphere(
+                                ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
+                                ST_GeomFromText('POINT(%s %s)', 4326)
+                             ) as distance
+                        FROM 
+                            store as a
+                        WHERE 
+                            ST_DWithin(
+                                ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326)::geography,
+                                ST_GeomFromText('POINT(%s %s)', 4326)::geography,
+                                3000
+                                )
+                        ORDER BY
+                            distance"""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            query, [longitude, latitude, longitude, latitude]
+        )
+        result = cursor.fetchall()
+
+
+def getDistance(data_list, longitude, latitude):
+    if len(data_list) > 1:
+        query = """
+                            SELECT store_id, store_name, information, is_waiting, ST_DistanceSphere(
+                                    ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
+                                    ST_GeomFromText('POINT({} {})', 4326)
+                                 ) as distance   
+                            FROM 
+                                store as a
+                            WHERE 
+                                store_id in {} 
+                            ORDER BY
+                                distance""".format(longitude, latitude, data_list)
+    elif len(data_list) == 1:
+        query = """
+                                    SELECT store_id, store_name, information, is_waiting, ST_DistanceSphere(
+                                            ST_GeomFromText('POINT(' || a.longitude || ' ' || a.latitude || ')', 4326),
+                                            ST_GeomFromText('POINT({} {})', 4326)
+                                         ) as distance   
+                                    FROM 
+                                        store as a
+                                    WHERE 
+                                        store_id = {}
+                                    ORDER BY
+                                        distance""".format(longitude, latitude, data_list[0])
+    else:
+        return []
+    with connection.cursor() as cursor:
+        cursor.execute(
+            query
+        )
+        return cursor.fetchall()
