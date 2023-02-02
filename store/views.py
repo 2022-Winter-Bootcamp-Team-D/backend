@@ -294,6 +294,8 @@ class Word(APIView):
         inputData(es)
 
         search_word = request.GET['search']
+        latitude = request.GET['latitude']
+        longitude = request.GET['longitude']
 
         if not search_word:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': 'search word param is missing'})
@@ -314,9 +316,23 @@ class Word(APIView):
 
         data_list = []
         for data in docs['hits']['hits']:
-            data_list.append(data.get('_source'))
+            data_list.append(int(data.get('_source').get('id')))
+            # store_id = data.get('_source').get('id')
+        data = {"data": []}
 
-        return Response(data_list)
+        for i in getDistance(tuple(data_list), longitude, latitude):
+            store = Store.objects.get(store_id=i[0])
+            temp = {
+                "store_id": i[0],
+                "store_name": store.store_name,
+                "distance": i[4],
+                "waiting": Waiting.objects.filter(store_id=store.store_id).count(),
+                "is_waiting": store.is_waiting,
+                "information": store.information
+            }
+            data["data"].append(temp)
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 def inputData(es):
