@@ -264,7 +264,6 @@ class Search(APIView):
         longitude = float(request.data['longitude'])
 
         data = {"data": []}
-
         for i in getAroundStore(longitude, latitude):
             store = Store.objects.get(store_id=i[0])
             temp = {
@@ -403,7 +402,7 @@ def getAroundStore(longitude, latitude):
         cursor.execute(
             query, [longitude, latitude, longitude, latitude]
         )
-        result = cursor.fetchall()
+        return cursor.fetchall()
 
 
 def getDistance(data_list, longitude, latitude):
